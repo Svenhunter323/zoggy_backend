@@ -45,6 +45,12 @@ const { startFakeWinsJob } = require('./jobs/fakeWins');
     res.sendFile(path.join(__dirname, '../dist/index.html'));
   });
 
+  // Set CSP header to allow images from external sources
+app.use((req, res, next) => {
+  res.setHeader("Content-Security-Policy", "default-src 'self'; img-src 'self' *;");
+  next();
+});
+
   app.get('/health', (_, res) => res.json({ ok: true }));
 
   const server = app.listen(cfg.port, () => {
