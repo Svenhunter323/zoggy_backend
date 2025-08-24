@@ -6,9 +6,9 @@ yarn-error.log*
 pnpm-debug.log*
 
 # Production builds
-build/
-dist/
-out/
+# build/
+# dist/
+# out/
 
 # Environment variables
 .env
@@ -78,7 +78,7 @@ jspm_packages/
 
 # Nuxt.js build / generate output
 .nuxt
-dist
+# dist
 
 # Gatsby files
 .cache/
