@@ -9,6 +9,9 @@ const captureContext = require('./middleware/captureContext');
 const publicRoutes = require('./routes/public');
 const adminRoutes = require('./routes/admin');
 const telegramRoutes = require('./routes/telegram');
+const authRoutes = require('./routes/authRoutes');
+const chestRoutes = require('./routes/chestRoutes');
+const referralRoutes = require('./routes/referralRoutes');
 const { getBot } = require('./services/telegram');
 const { startFakeWinsJob } = require('./jobs/fakeWins');
 
@@ -25,8 +28,13 @@ const { startFakeWinsJob } = require('./jobs/fakeWins');
 
   // Basic rate limit (esp. signup)
   app.use('/api/waitlist', rateLimit({ windowMs: 60_000, max: 15 }));
+  app.use('/api/auth/signup', rateLimit({ windowMs: 60_000, max: 10 }));
+  app.use('/api/auth/signin', rateLimit({ windowMs: 60_000, max: 20 }));
 
   app.use('/api', publicRoutes);
+  app.use('/api/auth', authRoutes);
+  app.use('/api/chest', chestRoutes);
+  app.use('/api/referrals', referralRoutes);
   app.use('/api/admin', adminRoutes);
   app.use('/api/telegram', telegramRoutes);
 

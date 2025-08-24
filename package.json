@@ -19,6 +19,7 @@
     "mongoose": "^8.4.1",
     "nanoid": "^5.0.7",
     "node-cron": "^3.0.3",
+    "nodemailer": "^7.0.5",
     "telegraf": "^4.16.3"
   },
   "devDependencies": {

@@ -30,6 +30,12 @@ const cfg = {
   antifraud: {
     maxPerIpPerDay: Number(process.env.MAX_SIGNUPS_PER_IP_PER_DAY || 5),
     allowSelfRef: process.env.ALLOW_SELF_REF === '1'
+  },
+
+  email: {
+    from: process.env.EMAIL_FROM || 'noreply@zoggy.com',
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
   }
 };
 

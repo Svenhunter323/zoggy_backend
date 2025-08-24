@@ -15,6 +15,30 @@ async function ipSignupCount(ip) {
   return User.countDocuments({ signupIp: ip, createdAt: { $gte: since } });
 }
 
+// GET /api/me
+router.get('/me', auth, async (req, res) => {
+  try {
+    const user = req.user;
+    
+    const nextChestAt = user.lastOpenAt 
+      ? new Date(user.lastOpenAt.getTime() + 24 * 3600 * 1000)
+      : new Date();
+
+    res.json({
+      email: user.email,
+      totalCredits: (user.cents / 100).toFixed(2),
+      claimCode: user.claimCode,
+      nextChestAt: nextChestAt.toISOString(),
+      lastChestOpenAt: user.lastOpenAt ? user.lastOpenAt.toISOString() : null,
+      telegramVerified: !!user.telegramJoinedOk,
+      emailVerified: user.emailVerified
+    });
+  } catch (error) {
+    console.error('[public] Get me error:', error);
+    res.status(500).json({ error: 'server_error' });
+  }
+});
+
 // POST /api/waitlist
 router.post('/waitlist', async (req, res) => {
   try {
