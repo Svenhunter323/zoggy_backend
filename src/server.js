@@ -29,11 +29,9 @@ const { startFakeWinsJob } = require('./jobs/fakeWins');
 
   // Set CSP header to allow images from external sources
   app.use((req, res, next) => {
-    res.setHeader('Content-Security-Policy', `
-      default-src 'self';
-      style-src 'self' https://fonts.googleapis.com;
-      font-src 'self' https://fonts.gstatic.com;
-    `);
+    const csp = "default-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;";
+    console.log(csp);  // Debug log to verify the CSP header
+    res.setHeader('Content-Security-Policy', csp);
     next();
   });
 
