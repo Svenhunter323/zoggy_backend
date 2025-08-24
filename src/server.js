@@ -27,6 +27,13 @@ const { startFakeWinsJob } = require('./jobs/fakeWins');
   app.use(cookieParser());
   app.use(captureContext);
 
+  // Set CSP header to allow images from external sources
+  app.use((req, res, next) => {
+    // Update CSP to allow the API domain
+    res.setHeader("Content-Security-Policy", "default-src 'self'; connect-src 'self' https://prelaunch-landing.onrender.com;");
+    next();
+  });
+
   // Basic rate limit (esp. signup)
   app.use('/api/waitlist', rateLimit({ windowMs: 60_000, max: 15 }));
   app.use('/api/auth/signup', rateLimit({ windowMs: 60_000, max: 10 }));
@@ -44,12 +51,6 @@ const { startFakeWinsJob } = require('./jobs/fakeWins');
   app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../dist/index.html'));
   });
-
-  // Set CSP header to allow images from external sources
-app.use((req, res, next) => {
-  res.setHeader("Content-Security-Policy", "default-src 'self'; img-src 'self' *;");
-  next();
-});
 
   app.get('/health', (_, res) => res.json({ ok: true }));
 
