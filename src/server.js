@@ -29,8 +29,11 @@ const { startFakeWinsJob } = require('./jobs/fakeWins');
 
   // Set CSP header to allow images from external sources
   app.use((req, res, next) => {
-    // Update CSP to allow the API domain
-    res.setHeader("Content-Security-Policy", "default-src 'self'; connect-src 'self' https://prelaunch-landing.onrender.com;");
+    res.setHeader('Content-Security-Policy', `
+      default-src 'self';
+      style-src 'self' https://fonts.googleapis.com;
+      font-src 'self' https://fonts.gstatic.com;
+    `);
     next();
   });
 
