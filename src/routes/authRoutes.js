@@ -14,4 +14,7 @@ router.get('/verify-email', verifyEmail);
 // POST /api/auth/resend-verification
 router.post('/resend-verification', resendVerification);
 
+// POST /api/auth/resend - Alias for frontend compatibility
+router.post('/resend', resendVerification);
+
 module.exports = router;

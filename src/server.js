@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const cors = require('cors');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
@@ -8,7 +9,7 @@ const cfg = require('./config');
 const captureContext = require('./middleware/captureContext');
 const publicRoutes = require('./routes/public');
 const adminRoutes = require('./routes/admin');
-const telegramRoutes = require('./routes/telegram');
+const telegramRoutes = require('./routes/telegramRoutes');
 const authRoutes = require('./routes/authRoutes');
 const chestRoutes = require('./routes/chestRoutes');
 const referralRoutes = require('./routes/referralRoutes');
@@ -21,7 +22,7 @@ const { startFakeWinsJob } = require('./jobs/fakeWins');
   const app = express();
   app.set('trust proxy', 1);
   app.use(helmet());
-  app.use(cors({ origin: true, credentials: true }));
+  app.use(cors({ origin: '*', credentials: true }));
   app.use(express.json());
   app.use(cookieParser());
   app.use(captureContext);
@@ -37,6 +38,12 @@ const { startFakeWinsJob } = require('./jobs/fakeWins');
   app.use('/api/referrals', referralRoutes);
   app.use('/api/admin', adminRoutes);
   app.use('/api/telegram', telegramRoutes);
+
+  // Serve static files from dist directory
+  app.use(express.static(path.join(__dirname, '../dist')));
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../dist/index.html'));
+  });
 
   app.get('/health', (_, res) => res.json({ ok: true }));
 

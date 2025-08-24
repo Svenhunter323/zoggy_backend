@@ -1,3 +1,4 @@
+const jwt = require('jsonwebtoken');
 const express = require('express');
 const router = express.Router();
 const { sign, auth } = require('../middleware/auth');
@@ -38,14 +39,13 @@ router.get('/me', auth, async (req, res) => {
     res.status(500).json({ error: 'server_error' });
   }
 });
-
 // POST /api/waitlist
 router.post('/waitlist', async (req, res) => {
   try {
     const { email, ref } = req.body || {};
-    if (!email) return res.status(400).json({ error: 'email_required' });
+    if (!email || !isValidEmail(email)) return res.status(400).json({ error: 'invalid_email_format' });
 
-    // duplicate email block
+    // duplicate email check
     const existing = await User.findOne({ email });
     if (existing) {
       const token = sign(existing);
@@ -59,14 +59,25 @@ router.post('/waitlist', async (req, res) => {
       return res.status(429).json({ error: 'too_many_signups_from_ip' });
     }
 
+    // Generate referral and claim codes
     const referralCode = newReferralCode();
     const claimCode = newClaimCode();
 
+    // Handle referral code logic
     let referredBy = (ref || '').trim();
-    if (!cfg.antifraud.allowSelfRef && referredBy && referredBy === referralCode) {
+    if (referredBy) {
+      const referredUser = await User.findOne({ referralCode: referredBy });
+      if (!referredUser) {
+        return res.status(400).json({ error: 'invalid_referral_code' });
+      }
+    }
+
+    // Prevent self-referrals
+    if (!cfg.antifraud.allowSelfRef && referredBy === referralCode) {
       referredBy = ''; // prevent self-ref
     }
 
+    // Create new user
     const user = await User.create({
       email,
       referralCode,
@@ -74,20 +85,36 @@ router.post('/waitlist', async (req, res) => {
       referredBy,
       signupIp: req.ctx.ip,
       signupUa: req.ctx.ua,
-      deviceId: req.ctx.deviceId
+      deviceId: req.ctx.deviceId,
     });
 
-    // increment inviter referralCount
+    // Increment inviter's referral count
     if (referredBy) {
       await User.updateOne({ referralCode: referredBy }, { $inc: { referralCount: 1 } });
     }
 
-    addToList(email).catch(() => {});
+    // Create verification token
+    const verificationToken = jwt.sign(
+      { userId: user._id.toString(), type: 'email_verification' },
+      cfg.jwtSecret,
+      { expiresIn: '24h' }
+    );
 
+    const verificationLink = `${cfg.telegram.publicBaseUrl || 'http://localhost:3000'}/verify-email?token=${verificationToken}`;
+
+    // Send verification email
+    await sendVerificationEmail(email, verificationLink);
+
+    // Add user to Mailchimp
+    addToList(email).catch((e) => console.error('Error adding to Mailchimp:', e));
+
+    // Generate JWT token
     const token = sign(user);
+
+    // Respond with the token and referral code
     res.json({ token, referralCode });
   } catch (e) {
-    console.error(e);
+    console.error('Error in /waitlist:', e);
     res.status(500).json({ error: 'server_error' });
   }
 });
@@ -154,7 +181,64 @@ router.post('/open-chest', auth, async (req, res) => {
   res.json({ cents, amount: (cents / 100).toFixed(2) });
 });
 
-// GET /api/last-wins (bots only, newest first)
+// GET /api/stats - Platform statistics
+router.get('/stats', async (req, res) => {
+  try {
+    const totalUsers = await User.countDocuments();
+    const totalReferrals = await User.aggregate([
+      { $group: { _id: null, total: { $sum: '$referralCount' } } }
+    ]);
+    
+    res.json({
+      totalUsers,
+      totalReferrals: totalReferrals[0]?.total || 0
+    });
+  } catch (error) {
+    console.error('[public] Get stats error:', error);
+    res.status(500).json({ error: 'server_error' });
+  }
+});
+
+// GET /api/wins/latest - Recent wins (alias for last-wins)
+router.get('/wins/latest', async (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit) || 24, 100);
+    const items = await FakeWin.find().sort({ createdAt: -1 }).limit(limit);
+    res.json(items.map(i => ({
+      username: i.username,
+      amount: i.amount,
+      at: i.createdAt
+    })));
+  } catch (error) {
+    console.error('[public] Get wins/latest error:', error);
+    res.status(500).json({ error: 'server_error' });
+  }
+});
+
+// GET /api/leaderboard/top10 - Top users by referrals
+router.get('/leaderboard/top10', async (req, res) => {
+  try {
+    const topUsers = await User.find({ referralCount: { $gt: 0 } })
+      .sort({ referralCount: -1, createdAt: 1 })
+      .limit(10)
+      .select('email referralCount createdAt')
+      .lean();
+
+    const leaderboard = topUsers.map((user, index) => ({
+      rank: index + 1,
+      email: user.email.replace(/(.{2}).*(@.*)/, '$1***$2'), // Mask email for privacy
+      referrals: user.referralCount,
+      joinedAt: user.createdAt
+    }));
+
+    res.json(leaderboard);
+  } catch (error) {
+    console.error('[public] Get leaderboard error:', error);
+    res.status(500).json({ error: 'server_error' });
+  }
+});
+
+// GET /api/last-wins (bots only, newest first) - Keep for backward compatibility
 router.get('/last-wins', async (req, res) => {
   const items = await FakeWin.find().sort({ createdAt: -1 }).limit(50);
   res.json(items.map(i => ({

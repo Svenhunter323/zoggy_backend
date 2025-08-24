@@ -19,6 +19,7 @@ function adminAuth(req, res, next) {
   const token = (req.headers.authorization || '').replace('Bearer ', '');
   try {
     const payload = jwt.verify(token, cfg.jwtSecret);
+    console.log(req.url, payload);
     if (payload.role !== 'admin') return res.status(403).json({ error: 'forbidden' });
     next();
   } catch {

@@ -17,7 +17,8 @@ const cfg = {
     host: process.env.MAILTRAP_HOST,
     port: Number(process.env.MAILTRAP_PORT || 2525),
     username: process.env.MAILTRAP_USERNAME,
-    password: process.env.MAILTRAP_PASSWORD
+    password: process.env.MAILTRAP_PASSWORD,
+    secure: process.env.MAILTRAP_SECURE === 'true'
   },
 
   telegram: {

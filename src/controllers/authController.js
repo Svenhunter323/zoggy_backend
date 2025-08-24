@@ -3,14 +3,16 @@ const nodemailer = require('nodemailer');
 const User = require('../models/User');
 const { newReferralCode, newClaimCode } = require('../utils/ids');
 const { addToList } = require('../services/mailchimp');
+const { sign, auth } = require('../middleware/auth');
 const cfg = require('../config');
 
 // Create email transporter
 const createTransporter = () => {
   if (cfg.mailtrap.host) {
-    return nodemailer.createTransporter({
+    return nodemailer.createTransport({
       host: cfg.mailtrap.host,
       port: cfg.mailtrap.port,
+      secure: cfg.mailtrap.secure,
       auth: {
         user: cfg.mailtrap.username,
         pass: cfg.mailtrap.password
@@ -18,6 +20,13 @@ const createTransporter = () => {
     });
   }
   return null;
+};
+
+
+// Helper function to validate email format
+const isValidEmail = (email) => {
+  const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  return regex.test(email);
 };
 
 // Send verification email
@@ -61,55 +70,81 @@ async function ipSignupCount(ip) {
 // POST /api/auth/signup
 const signup = async (req, res) => {
   try {
-    const { email } = req.body;
-    if (!email) return res.status(400).json({ error: 'email_required' });
-
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ error: 'email_already_exists' });
+      const { email, ref } = req.body || {};
+      if (!email || !isValidEmail(email)) return res.status(400).json({ error: 'invalid_email_format' });
+  
+      // duplicate email check
+      const existing = await User.findOne({ email });
+      if (existing) {
+        const token = sign(existing);
+        return res.json({ token, referralCode: existing.referralCode });
+      }
+  
+      // IP/device throttling
+      const ip = req.ctx.ip;
+      const count = await ipSignupCount(ip);
+      if (count >= cfg.antifraud.maxPerIpPerDay) {
+        return res.status(429).json({ error: 'too_many_signups_from_ip' });
+      }
+  
+      // Generate referral and claim codes
+      const referralCode = newReferralCode();
+      const claimCode = newClaimCode();
+  
+      // Handle referral code logic
+      let referredBy = (ref || '').trim();
+      if (referredBy) {
+        const referredUser = await User.findOne({ referralCode: referredBy });
+        if (!referredUser) {
+          return res.status(400).json({ error: 'invalid_referral_code' });
+        }
+      }
+  
+      // Prevent self-referrals
+      if (!cfg.antifraud.allowSelfRef && referredBy === referralCode) {
+        referredBy = ''; // prevent self-ref
+      }
+  
+      // Create new user
+      const user = await User.create({
+        email,
+        referralCode,
+        claimCode,
+        referredBy,
+        signupIp: req.ctx.ip,
+        signupUa: req.ctx.ua,
+        deviceId: req.ctx.deviceId,
+      });
+  
+      // Increment inviter's referral count
+      if (referredBy) {
+        await User.updateOne({ referralCode: referredBy }, { $inc: { referralCount: 1 } });
+      }
+  
+      // Create verification token
+      const verificationToken = jwt.sign(
+        { userId: user._id.toString(), type: 'email_verification' },
+        cfg.jwtSecret,
+        { expiresIn: '24h' }
+      );
+  
+      const verificationLink = `${cfg.telegram.publicBaseUrl || 'http://localhost:3000'}/verify-email?token=${verificationToken}`;
+  
+      // Send verification email
+      await sendVerificationEmail(email, verificationLink);
+  
+      // Add user to Mailchimp
+      addToList(email).catch((e) => console.error('Error adding to Mailchimp:', e));
+  
+      // Generate JWT token
+      const token = sign(user);
+  
+      // Respond with the token and referral code
+      res.json({ token, referralCode });
+    } catch (e) {
+      console.error('Error in /waitlist:', e);
+      res.status(500).json({ error: 'server_error' });
     }
-
-    // IP/device throttling
-    const ip = req.ctx.ip;
-    const count = await ipSignupCount(ip);
-    if (count >= cfg.antifraud.maxPerIpPerDay) {
-      return res.status(429).json({ error: 'too_many_signups_from_ip' });
-    }
-
-    const referralCode = newReferralCode();
-    const claimCode = newClaimCode();
-
-    const user = await User.create({
-      email,
-      referralCode,
-      claimCode,
-      emailVerified: false,
-      signupIp: req.ctx.ip,
-      signupUa: req.ctx.ua,
-      deviceId: req.ctx.deviceId
-    });
-
-    // Create verification token
-    const verificationToken = jwt.sign(
-      { userId: user._id.toString(), type: 'email_verification' },
-      cfg.jwtSecret,
-      { expiresIn: '24h' }
-    );
-
-    const verificationLink = `${cfg.telegram.publicBaseUrl || 'http://localhost:3000'}/verify-email?token=${verificationToken}`;
-
-    // Send verification email
-    await sendVerificationEmail(email, verificationLink);
-
-    // Add to Mailchimp list
-    addToList(email).catch(() => {});
-
-    res.json({ message: 'Signup successful. Please verify your email.' });
-  } catch (error) {
-    console.error('[auth] Signup error:', error);
-    res.status(500).json({ error: 'server_error' });
-  }
 };
 
 // POST /api/auth/signin
@@ -138,6 +173,7 @@ const signin = async (req, res) => {
       user: {
         email: user.email,
         claimCode: user.claimCode,
+        referralCode: user.referralCode,
         totalCredits: (user.cents / 100).toFixed(2)
       }
     });
