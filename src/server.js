@@ -27,11 +27,21 @@ const { startFakeWinsJob } = require('./jobs/fakeWins');
   app.use(cookieParser());
   app.use(captureContext);
 
-  // Set CSP header to allow images from external sources
+  // Set CSP header to allow images from external sources and other resources
   app.use((req, res, next) => {
-    const csp = "default-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;";
+    const csp = `
+      default-src 'self'; 
+      style-src 'self' https://fonts.googleapis.com; 
+      font-src 'self' https://fonts.gstatic.com; 
+      img-src 'self' https://api.dicebear.com; 
+    `;
+    
     console.log(csp);  // Debug log to verify the CSP header
+    
+    // Set the CSP header for all responses
     res.setHeader('Content-Security-Policy', csp);
+    
+    // Call next middleware function
     next();
   });
 
