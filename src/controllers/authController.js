@@ -205,9 +205,15 @@ const signin = async (req, res) => {
       user: {
         email: user.email,
         claimCode: user.claimCode,
-        referralCode: user.referralCode,
         balance: user.credits+(user.cents/100),
-        totalCredits: (user.cents / 100).toFixed(2)
+        totalCredits: (user.cents / 100).toFixed(2),
+        lastOpenAt: user.lastOpenAt,
+        cooldownSeconds: user.lastOpenAt ? Math.max(0, Math.floor(24 * 3600 - (Date.now() - user.lastOpenAt.getTime()) / 1000)) : 0,
+        openCount: user.openCount,
+        referralCount: user.referralCount,
+        referralCode: user.referralCode,
+        referredBy: user.referredBy,
+        firstChestOpened: user.firstChestOpened,
       },
       redirect: '/dashboard' // Redirect to logged-in page
     });

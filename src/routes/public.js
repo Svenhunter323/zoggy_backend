@@ -27,12 +27,19 @@ router.get('/me', auth, async (req, res) => {
 
     res.json({
       email: user.email,
-      totalCredits: (user.cents / 100).toFixed(2),
       claimCode: user.claimCode,
       nextChestAt: nextChestAt.toISOString(),
       lastChestOpenAt: user.lastOpenAt ? user.lastOpenAt.toISOString() : null,
       telegramVerified: !!user.telegramJoinedOk,
-      emailVerified: user.emailVerified
+      emailVerified: user.emailVerified,
+      cooldownSeconds: user.lastOpenAt ? Math.max(0, Math.floor(24 * 3600 - (Date.now() - user.lastOpenAt.getTime()) / 1000)) : 0,
+      balance: user.credits+(user.cents/100),
+      totalCredits: (user.cents / 100).toFixed(2),
+      openCount: user.openCount,
+      referralCount: user.referralCount,
+      referralCode: user.referralCode,
+      referredBy: user.referredBy,
+      firstChestOpened: user.firstChestOpened,
     });
   } catch (error) {
     console.error('[public] Get me error:', error);
