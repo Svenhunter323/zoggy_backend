@@ -195,10 +195,11 @@ const signin = async (req, res) => {
   }
 };
 
-// GET /api/auth/verify-email
+// POST /api/auth/verify-email
 const verifyEmail = async (req, res) => {
   try {
-    const { token } = req.query;
+    const { token } = req.body;
+    console.log(token)
     if (!token) return res.status(400).json({ error: 'token_required' });
 
     const decoded = jwt.verify(token, cfg.jwtSecret);

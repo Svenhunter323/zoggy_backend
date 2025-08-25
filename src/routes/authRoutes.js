@@ -8,8 +8,8 @@ router.post('/signup', signup);
 // POST /api/auth/signin
 router.post('/signin', signin);
 
-// GET /api/auth/verify-email
-router.get('/verify-email', verifyEmail);
+// POST /api/auth/verify-email
+router.post('/verify-email', verifyEmail);
 
 // POST /api/auth/resend-verification
 router.post('/resend-verification', resendVerification);
