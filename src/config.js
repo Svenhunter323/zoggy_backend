@@ -33,10 +33,16 @@ const cfg = {
     allowSelfRef: process.env.ALLOW_SELF_REF === '1'
   },
 
+  smtp: {
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT || 587),
+    secure: process.env.SMTP_SECURE === 'true',
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS
+  },
+
   email: {
-    from: process.env.EMAIL_FROM || 'noreply@zoggy.com',
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
+    from: process.env.EMAIL_FROM || 'noreply@zoggy.com'
   }
 };
 

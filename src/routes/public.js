@@ -39,7 +39,7 @@ router.get('/me', auth, async (req, res) => {
     res.status(500).json({ error: 'server_error' });
   }
 });
-// POST /api/waitlist
+// POST /api/waitlist NOT use
 router.post('/waitlist', async (req, res) => {
   try {
     const { email, ref } = req.body || {};

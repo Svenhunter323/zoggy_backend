@@ -8,7 +8,9 @@ const cfg = require('../config');
 
 // Create email transporter
 const createTransporter = () => {
-  if (cfg.mailtrap.host) {
+  // Use Mailtrap for development, SMTP for production
+  console.log('mode: ', cfg.env);
+  if (cfg.env === 'development' && cfg.mailtrap.host) {
     return nodemailer.createTransport({
       host: cfg.mailtrap.host,
       port: cfg.mailtrap.port,
@@ -18,10 +20,19 @@ const createTransporter = () => {
         pass: cfg.mailtrap.password
       }
     });
+  } else if (cfg.env === 'production' && cfg.smtp.host) {
+    return nodemailer.createTransport({
+      host: cfg.smtp.host,
+      port: cfg.smtp.port,
+      secure: cfg.smtp.secure,
+      auth: {
+        user: cfg.smtp.user,
+        pass: cfg.smtp.pass
+      }
+    });
   }
   return null;
 };
-
 
 // Helper function to validate email format
 const isValidEmail = (email) => {
@@ -38,7 +49,7 @@ const sendVerificationEmail = async (email, verificationLink) => {
   }
 
   const mailOptions = {
-    from: cfg.mailchimp.from || 'noreply@zoggy.com',
+    from: cfg.email.from,
     to: email,
     subject: 'Verify Your Email - Zoggy Casino',
     html: `
