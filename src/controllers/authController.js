@@ -174,6 +174,7 @@ const signin = async (req, res) => {
         email: user.email,
         claimCode: user.claimCode,
         referralCode: user.referralCode,
+        balance: user.credits+(user.cents/100),
         totalCredits: (user.cents / 100).toFixed(2)
       }
     });
