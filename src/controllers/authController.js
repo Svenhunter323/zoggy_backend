@@ -208,7 +208,8 @@ const signin = async (req, res) => {
         referralCode: user.referralCode,
         balance: user.credits+(user.cents/100),
         totalCredits: (user.cents / 100).toFixed(2)
-      }
+      },
+      redirect: '/dashboard' // Redirect to logged-in page
     });
   } catch (error) {
     console.error('[auth] Signin error:', error);
