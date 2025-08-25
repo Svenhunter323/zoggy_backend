@@ -10,8 +10,7 @@ const jwt = require('jsonwebtoken');
 // Webhook for Telegram updates
 router.post(`/webhook/${cfg.telegram.webhookSecret}`, async (req, res) => {
   try {
-
-    // console.log('Received update:', req.body);  // Add this line to log the entire update
+    console.log('Received update:', req.body);  // Add this line to log the entire update
 
     const bot = getBot();
     if (!bot) {
