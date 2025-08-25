@@ -11,7 +11,7 @@ const jwt = require('jsonwebtoken');
 router.post(`/webhook/${cfg.telegram.webhookSecret}`, async (req, res) => {
   try {
 
-    console.log('Received update:', req.body);  // Add this line to log the entire update
+    // console.log('Received update:', req.body);  // Add this line to log the entire update
 
     const bot = getBot();
     if (!bot) {
@@ -80,7 +80,6 @@ const handleUserInteraction = async (telegramUserId, message) => {
   bot.start(async (ctx) => {
     try {
       const payload = ctx.startPayload; // JWT with userId
-
       console.log("------------------------>/start: payload:\n", payload);
       if (!payload) {
         return ctx.reply('❌ Invalid start link. Please get a new link from the website.');
