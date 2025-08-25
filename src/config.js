@@ -5,6 +5,7 @@ const cfg = {
   port: Number(process.env.PORT || 8080),
   mongoUri: process.env.MONGODB_URI,
   jwtSecret: process.env.JWT_SECRET,
+  publicBaseUrl: process.env.PUBLIC_BASE_URL,
 
   mailchimp: {
     apiKey: process.env.MAILCHIMP_API_KEY,
@@ -24,8 +25,7 @@ const cfg = {
   telegram: {
     token: process.env.TELEGRAM_BOT_TOKEN,
     channelId: process.env.TELEGRAM_CHANNEL_ID,
-    webhookSecret: process.env.TELEGRAM_WEBHOOK_SECRET,
-    publicBaseUrl: process.env.PUBLIC_BASE_URL
+    webhookSecret: process.env.TELEGRAM_WEBHOOK_SECRET
   },
 
   antifraud: {
@@ -42,7 +42,7 @@ const cfg = {
   },
 
   email: {
-    from: process.env.EMAIL_FROM || 'noreply@zoggy.com'
+    from: process.env.EMAIL_FROM || 'help@zoggybet.com'
   }
 };
 

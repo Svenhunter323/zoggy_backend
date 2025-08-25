@@ -5,7 +5,7 @@ const cfg = require('../config');
 const getReferrals = async (req, res) => {
   try {
     const user = req.user;
-    const baseUrl = cfg.telegram.publicBaseUrl || 'http://localhost:3000';
+    const baseUrl = cfg.publicBaseUrl || 'http://localhost:3000';
     const referralLink = `${baseUrl}?ref=${user.referralCode}`;
 
     res.json({

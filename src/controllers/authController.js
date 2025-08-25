@@ -139,7 +139,7 @@ const signup = async (req, res) => {
         { expiresIn: '24h' }
       );
   
-      const verificationLink = `${cfg.telegram.publicBaseUrl || 'http://localhost:3000'}/verify-email?token=${verificationToken}`;
+      const verificationLink = `${cfg.publicBaseUrl || 'http://localhost:3000'}/verify-email?token=${verificationToken}`;
   
       // Send verification email
       await sendVerificationEmail(email, verificationLink);
@@ -250,7 +250,7 @@ const resendVerification = async (req, res) => {
       { expiresIn: '24h' }
     );
 
-    const verificationLink = `${cfg.telegram.publicBaseUrl || 'http://localhost:3000'}/verify-email?token=${verificationToken}`;
+    const verificationLink = `${cfg.publicBaseUrl || 'http://localhost:3000'}/verify-email?token=${verificationToken}`;
 
     // Send verification email
     await sendVerificationEmail(email, verificationLink);
