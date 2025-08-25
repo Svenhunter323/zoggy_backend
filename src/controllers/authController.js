@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const User = require('../models/User');
 const { newReferralCode, newClaimCode } = require('../utils/ids');
-const { addToList } = require('../services/mailchimp');
+const { addToList, checkEmailExists } = require('../services/mailchimp');
 const { sign, auth } = require('../middleware/auth');
 const cfg = require('../config');
 
@@ -36,7 +36,7 @@ const createTransporter = () => {
 
 // Helper function to validate email format
 const isValidEmail = (email) => {
-  const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return regex.test(email);
 };
 
@@ -72,90 +72,111 @@ const sendVerificationEmail = async (email, verificationLink) => {
   }
 };
 
-// Anti-fraud helper
+// Anti-fraud helpers
 async function ipSignupCount(ip) {
-  const since = new Date(Date.now() - 24 * 3600 * 1000);
+  const since = new Date(Date.now() - 3600 * 1000); // 1 hour instead of 24 hours
   return User.countDocuments({ signupIp: ip, createdAt: { $gte: since } });
+}
+
+async function deviceSignupCount(deviceId) {
+  if (!deviceId) return 0;
+  return User.countDocuments({ deviceId });
 }
 
 // POST /api/auth/signup
 const signup = async (req, res) => {
   try {
-      const { email, ref } = req.body || {};
-      if (!email || !isValidEmail(email)) return res.status(400).json({ error: 'invalid_email_format' });
-  
-      // duplicate email check
-      const existing = await User.findOne({ email });
-      if (existing) {
-        const token = sign(existing);
-        return res.json({ token, referralCode: existing.referralCode });
-      }
-  
-      // IP/device throttling
-      const ip = req.ctx.ip;
-      const count = await ipSignupCount(ip);
-      if (count >= cfg.antifraud.maxPerIpPerDay) {
-        return res.status(429).json({ error: 'too_many_signups_from_ip' });
-      }
-  
-      // Generate referral and claim codes
-      const referralCode = newReferralCode();
-      const claimCode = newClaimCode();
-  
-      // Handle referral code logic
-      let referredBy = (ref || '').trim();
-      if (referredBy) {
-        const referredUser = await User.findOne({ referralCode: referredBy });
-        if (!referredUser) {
-          return res.status(400).json({ error: 'invalid_referral_code' });
-        }
-      }
-  
-      // Prevent self-referrals
-      if (!cfg.antifraud.allowSelfRef && referredBy === referralCode) {
-        referredBy = ''; // prevent self-ref
-      }
-  
-      // Create new user
-      const user = await User.create({
-        email,
-        referralCode,
-        claimCode,
-        referredBy,
-        signupIp: req.ctx.ip,
-        signupUa: req.ctx.ua,
-        deviceId: req.ctx.deviceId,
-      });
-  
-      // Increment inviter's referral count
-      if (referredBy) {
-        await User.updateOne({ referralCode: referredBy }, { $inc: { referralCount: 1 } });
-      }
-  
-      // Create verification token
-      const verificationToken = jwt.sign(
-        { userId: user._id.toString(), type: 'email_verification' },
-        cfg.jwtSecret,
-        { expiresIn: '24h' }
-      );
-  
-      const verificationLink = `${cfg.publicBaseUrl || 'http://localhost:3000'}/verify-email?token=${verificationToken}`;
-  
-      // Send verification email
-      await sendVerificationEmail(email, verificationLink);
-  
-      // Add user to Mailchimp
-      addToList(email).catch((e) => console.error('Error adding to Mailchimp:', e));
-  
-      // Generate JWT token
-      const token = sign(user);
-  
-      // Respond with the token and referral code
-      res.json({ token, referralCode });
-    } catch (e) {
-      console.error('Error in /waitlist:', e);
-      res.status(500).json({ error: 'server_error' });
+    const { email, ref, deviceFingerprint } = req.body || {};
+    
+    // 1. Validate email format
+    if (!email || !isValidEmail(email)) {
+      return res.status(400).json({ error: 'invalid_email_format' });
     }
+
+    // 2. Check if email exists in database
+    const existing = await User.findOne({ email });
+    if (existing) {
+      // User already exists - log them in instantly
+      const token = sign(existing);
+      return res.json({ 
+        token, 
+        referralCode: existing.referralCode,
+        redirect: '/dashboard' // Redirect to logged-in page
+      });
+    }
+
+    // 3. Check if email exists in Mailchimp
+    const emailExistsInMailchimp = await checkEmailExists(email);
+    if (emailExistsInMailchimp) {
+      return res.status(400).json({ error: 'email_already_registered_in_mailchimp' });
+    }
+
+    // 4. IP-based fraud prevention (3 signups per hour)
+    const ip = req.ctx.ip;
+    const ipCount = await ipSignupCount(ip);
+    if (ipCount >= cfg.antifraud.maxPerIpPerDay) {
+      return res.status(429).json({ error: 'too_many_signups_from_ip' });
+    }
+
+    // 5. Device fingerprinting (optional)
+    if (deviceFingerprint) {
+      const deviceCount = await deviceSignupCount(deviceFingerprint);
+      if (deviceCount > 0) {
+        return res.status(400).json({ error: 'device_already_registered' });
+      }
+    }
+
+    // 6. Generate referral and claim codes
+    const referralCode = newReferralCode();
+    const claimCode = newClaimCode();
+
+    // 7. Handle referral code logic
+    let referredBy = (ref || '').trim();
+    if (referredBy) {
+      const referredUser = await User.findOne({ referralCode: referredBy });
+      if (!referredUser) {
+        return res.status(400).json({ error: 'invalid_referral_code' });
+      }
+    }
+
+    // Prevent self-referrals
+    if (!cfg.antifraud.allowSelfRef && referredBy === referralCode) {
+      referredBy = '';
+    }
+
+    // 8. Create new user (instant signup - no email verification required)
+    const user = await User.create({
+      email,
+      referralCode,
+      claimCode,
+      referredBy,
+      signupIp: req.ctx.ip,
+      signupUa: req.ctx.ua,
+      deviceId: deviceFingerprint || req.ctx.deviceId,
+      emailVerified: true, // Instant signup - no verification needed
+    });
+
+    // 9. Increment inviter's referral count
+    if (referredBy) {
+      await User.updateOne({ referralCode: referredBy }, { $inc: { referralCount: 1 } });
+    }
+
+    // 10. Add user to Mailchimp
+    addToList(email).catch((e) => console.error('Error adding to Mailchimp:', e));
+
+    // 11. Generate JWT token and respond
+    const token = sign(user);
+
+    res.json({ 
+      token, 
+      referralCode,
+      redirect: '/dashboard' // Redirect to logged-in page
+    });
+
+  } catch (e) {
+    console.error('Error in signup:', e);
+    res.status(500).json({ error: 'server_error' });
+  }
 };
 
 // POST /api/auth/signin

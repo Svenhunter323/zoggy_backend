@@ -10,6 +10,9 @@ const jwt = require('jsonwebtoken');
 // Webhook for Telegram updates
 router.post(`/webhook/${cfg.telegram.webhookSecret}`, async (req, res) => {
   try {
+
+    console.log('Received update:', req.body);  // Add this line to log the entire update
+
     const bot = getBot();
     if (!bot) {
       console.warn('[tg] Bot not configured, ignoring webhook');
@@ -17,6 +20,9 @@ router.post(`/webhook/${cfg.telegram.webhookSecret}`, async (req, res) => {
     }
 
     const { message, callback_query } = req.body;
+
+    // console.log("message->\n", message);
+    // console.log("callback_query->\n", callback_query);
     
     // Validate webhook payload
     if (!message && !callback_query) {
@@ -74,6 +80,8 @@ const handleUserInteraction = async (telegramUserId, message) => {
   bot.start(async (ctx) => {
     try {
       const payload = ctx.startPayload; // JWT with userId
+
+      console.log("------------------------>/start: payload:\n", payload);
       if (!payload) {
         return ctx.reply('❌ Invalid start link. Please get a new link from the website.');
       }
@@ -162,7 +170,7 @@ const handleUserInteraction = async (telegramUserId, message) => {
   });
 })();
 
-// 3) Frontend helper to generate deeplink
+// Frontend helper to generate deeplink
 // GET /api/telegram/deeplink  -> returns t.me link with JWT payload
 router.get('/deeplink', auth, getDeeplink);
 

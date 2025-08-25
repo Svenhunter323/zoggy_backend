@@ -8,6 +8,17 @@ if (cfg.mailchimp.apiKey) {
   });
 }
 
+async function checkEmailExists(email) {
+  if (!cfg.mailchimp.apiKey) return false;
+  try {
+    const result = await mailchimp.lists.searchMembers(cfg.mailchimp.listId, email);
+    return result.exact_matches.total_items > 0;
+  } catch (e) {
+    console.warn('[mailchimp] search error', e.message);
+    return false;
+  }
+}
+
 async function addToList(email) {
   if (!cfg.mailchimp.apiKey) return;
   try {
@@ -23,4 +34,4 @@ async function addToList(email) {
   }
 }
 
-module.exports = { addToList };
+module.exports = { addToList, checkEmailExists };
