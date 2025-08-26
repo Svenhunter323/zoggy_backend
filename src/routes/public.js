@@ -206,16 +206,33 @@ router.get('/stats', async (req, res) => {
   }
 });
 
-// GET /api/wins/latest - Recent wins (alias for last-wins)
+// GET /api/wins/latest - Recent real wins from ChestOpen
 router.get('/wins/latest', async (req, res) => {
   try {
-    const limit = Math.min(parseInt(req.query.limit) || 24, 100);
-    const items = await FakeWin.find().sort({ createdAt: -1 }).limit(limit);
-    res.json(items.map(i => ({
-      username: i.username,
-      amount: i.amount,
-      at: i.createdAt
-    })));
+    const limit = Math.min(parseInt(req.query.limit, 10) || 24, 100);
+
+    const rows = await ChestOpen.aggregate([
+      { $sort: { createdAt: -1 } },
+      { $limit: limit },
+      {
+        $lookup: {
+          from: 'users',              // collection name for User model
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'user'
+        }
+      },
+      { $unwind: '$user' },          // drop entries without a matching user
+      {
+        $project: {
+          username: '$user.email',    // per your requirement
+          amount: { $divide: ['$amountCents', 100] }, // cents -> dollars
+          at: '$createdAt'
+        }
+      }
+    ]);
+
+    res.json(rows);
   } catch (error) {
     console.error('[public] Get wins/latest error:', error);
     res.status(500).json({ error: 'server_error' });

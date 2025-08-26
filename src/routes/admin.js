@@ -98,6 +98,61 @@ router.get('/exports/claim-codes.csv', adminAuth, async (req, res) => {
   }
 });
 
+// GET /api/admin/exports/referrals.csv - Export referral data
+router.get('/exports/referrals.csv', adminAuth, async (req, res) => {
+  try {
+    const users = await User.find({ 
+      referredBy: { $ne: '', $exists: true } 
+    }, { 
+      email: 1, 
+      referredBy: 1, 
+      createdAt: 1,
+      emailVerified: 1,
+      telegramJoinedOk: 1,
+      firstChestOpened: 1,
+      cents: 1,
+      signupIp: 1,
+      deviceId: 1
+    }).sort({ createdAt: 1 });
+    
+    // Get all referrer codes to lookup referrer emails
+    const referrerCodes = [...new Set(users.map(u => u.referredBy).filter(Boolean))];
+    const referrers = await User.find({ 
+      referralCode: { $in: referrerCodes } 
+    }, { 
+      referralCode: 1, 
+      email: 1 
+    });
+    
+    // Create lookup map for referrer emails
+    const referrerMap = {};
+    referrers.forEach(r => {
+      referrerMap[r.referralCode] = r.email;
+    });
+    
+    const rows = users.map(u => ({
+      referrer: referrerMap[u.referredBy] || u.referredBy,
+      email: u.email,
+      referred_by: u.referredBy,
+      signup_date: u.createdAt.toISOString().split('T')[0],
+      email_verified: u.emailVerified ? 'Yes' : 'No',
+      telegram_verified: u.telegramJoinedOk ? 'Yes' : 'No',
+      first_chest_opened: u.firstChestOpened ? 'Yes' : 'No',
+      credits_usd: (u.cents / 100).toFixed(2),
+      signup_ip: u.signupIp || '',
+      device_id: u.deviceId || ''
+    }));
+    
+    const csv = toCsv(rows);
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="referrals.csv"');
+    res.send(csv);
+  } catch (error) {
+    console.error('[admin] Export referrals error:', error);
+    res.status(500).json({ error: 'server_error' });
+  }
+});
+
 // GET /api/admin/export/codes - Keep for backward compatibility
 router.get('/export/codes', adminAuth, async (req, res) => {
   const users = await User.find({}, { email: 1, claimCode: 1, cents: 1, referralCode: 1, referralCount: 1 }).sort({ createdAt: 1 });

@@ -69,5 +69,5 @@ const { startFakeWinsJob } = require('./jobs/fakeWins');
   }
 
   // Start fake wins generator
-  startFakeWinsJob();
+  // startFakeWinsJob();
 })();
