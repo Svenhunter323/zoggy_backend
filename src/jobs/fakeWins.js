@@ -106,7 +106,7 @@ function getAvailableName() {
   
   // If no names available, use oldest used name
   if (availableNames.length === 0) {
-    console.warn('[fakeWins] All names used recently, reusing oldest');
+    // console.warn('[fakeWins] All names used recently, reusing oldest');
     return allNames[Math.floor(Math.random() * allNames.length)];
   }
   
@@ -205,7 +205,7 @@ function scheduleSmallWinsBurst() {
     });
   }
   
-  console.log(`[fakeWins] Scheduled ${burstCount} small wins burst`);
+  // console.log(`[fakeWins] Scheduled ${burstCount} small wins burst`);
 }
 
 // Schedule micro-bursts (3-5 events with 2-6s gaps every 6-10 min)
@@ -432,7 +432,7 @@ async function processNextWin() {
       country: win.country
     });
     
-    console.log(`[fakeWins] Generated ${win.type} win: ${win.username} ($${win.amount}) from ${win.country.name} (next in ${Math.round(win.delay/1000)}s)`);
+    // console.log(`[fakeWins] Generated ${win.type} win: ${win.username} ($${win.amount}) from ${win.country.name} (next in ${Math.round(win.delay/1000)}s)`);
     
     // Schedule next win
     nextWinTime = Date.now() + win.delay;
