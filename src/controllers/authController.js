@@ -121,7 +121,7 @@ const signup = async (req, res) => {
     // 5. Device fingerprinting (optional)
     if (deviceFingerprint) {
       const deviceCount = await deviceSignupCount(deviceFingerprint);
-      if (deviceCount > 0) {
+      if (deviceCount > cfg.antifraud.maxPerIpPerDay) {
         return res.status(400).json({ error: 'device_already_registered' });
       }
     }
