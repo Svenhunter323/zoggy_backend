@@ -107,9 +107,9 @@ const signup = async (req, res) => {
 
     // 3. Check if email exists in Mailchimp
     const emailExistsInMailchimp = await checkEmailExists(email);
-    if (emailExistsInMailchimp) {
-      return res.status(400).json({ error: 'email_already_registered_in_mailchimp' });
-    }
+    // if (emailExistsInMailchimp) {
+    //   return res.status(400).json({ error: 'email_already_registered_in_mailchimp' });
+    // }
 
     // 4. IP-based fraud prevention (3 signups per hour)
     const ip = req.ctx.ip;

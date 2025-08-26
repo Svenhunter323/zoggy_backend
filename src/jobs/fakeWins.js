@@ -106,7 +106,7 @@ function getAvailableName() {
   
   // If no names available, use oldest used name
   if (availableNames.length === 0) {
-    // console.warn('[fakeWins] All names used recently, reusing oldest');
+    // // console.warn('[fakeWins] All names used recently, reusing oldest');
     return allNames[Math.floor(Math.random() * allNames.length)];
   }
   
@@ -205,7 +205,7 @@ function scheduleSmallWinsBurst() {
     });
   }
   
-  // console.log(`[fakeWins] Scheduled ${burstCount} small wins burst`);
+  // // console.log(`[fakeWins] Scheduled ${burstCount} small wins burst`);
 }
 
 // Schedule micro-bursts (3-5 events with 2-6s gaps every 6-10 min)
@@ -233,7 +233,7 @@ function scheduleMicroBurst() {
     }
     
     lastMicroBurst = now;
-    console.log(`[fakeWins] Scheduled ${burstCount} event micro-burst`);
+    // console.log(`[fakeWins] Scheduled ${burstCount} event micro-burst`);
     return true;
   }
   
@@ -254,10 +254,10 @@ function shouldEnterLull() {
     
     setTimeout(() => {
       isInLull = false;
-      console.log('[fakeWins] Lull period ended');
+      // console.log('[fakeWins] Lull period ended');
     }, lullDuration);
     
-    console.log(`[fakeWins] Entering ${Math.round(lullDuration/60000)}min lull period`);
+    // console.log(`[fakeWins] Entering ${Math.round(lullDuration/60000)}min lull period`);
     return true;
   }
   
@@ -419,7 +419,7 @@ async function processNextWin() {
     if (!win.amount) {
       nextWinTime = Date.now() + win.delay;
       if (win.type !== 'waiting') {
-        console.log(`[fakeWins] ${win.type} - next check in ${Math.round(win.delay/1000)}s`);
+        // console.log(`[fakeWins] ${win.type} - next check in ${Math.round(win.delay/1000)}s`);
       }
       return;
     }
@@ -432,7 +432,7 @@ async function processNextWin() {
       country: win.country
     });
     
-    // console.log(`[fakeWins] Generated ${win.type} win: ${win.username} ($${win.amount}) from ${win.country.name} (next in ${Math.round(win.delay/1000)}s)`);
+    // // console.log(`[fakeWins] Generated ${win.type} win: ${win.username} ($${win.amount}) from ${win.country.name} (next in ${Math.round(win.delay/1000)}s)`);
     
     // Schedule next win
     nextWinTime = Date.now() + win.delay;
@@ -445,15 +445,15 @@ async function processNextWin() {
       await FakeWin.deleteMany({ _id: { $in: ids } });
     }
   } catch (e) {
-    console.warn('[fakeWins] job error', e.message);
+    // console.warn('[fakeWins] job error', e.message);
     // Retry in 30 seconds on error
     nextWinTime = Date.now() + 30000;
   }
 }
 
 function startFakeWinsJob() {
-  console.log('[fakeWins] Starting sophisticated fake wins system with human-like cadence');
-  console.log('[fakeWins] Features: 3k+ names, 90min reuse prevention, micro-bursts, lulls, strict frequency limits');
+  // console.log('[fakeWins] Starting sophisticated fake wins system with human-like cadence');
+  // console.log('[fakeWins] Features: 3k+ names, 90min reuse prevention, micro-bursts, lulls, strict frequency limits');
   
   try {
     // Check every 5 seconds for more responsive timing
@@ -464,7 +464,7 @@ function startFakeWinsJob() {
           await processNextWin();
         }
       } catch (error) {
-        console.error('[fakeWins] Error in cron job:', error.message);
+        // console.error('[fakeWins] Error in cron job:', error.message);
       }
     }, {
       scheduled: true,
@@ -474,13 +474,13 @@ function startFakeWinsJob() {
     // Initialize with first win after a short delay
     setTimeout(() => {
       processNextWin().catch(error => {
-        console.error('[fakeWins] Error in initial win:', error.message);
+        // console.error('[fakeWins] Error in initial win:', error.message);
       });
     }, 3000);
     
-    console.log('[fakeWins] Job scheduled successfully');
+    // console.log('[fakeWins] Job scheduled successfully');
   } catch (error) {
-    console.error('[fakeWins] Failed to start job:', error.message);
+    // console.error('[fakeWins] Failed to start job:', error.message);
     // Fallback to setInterval if cron fails
     setInterval(async () => {
       try {
@@ -488,10 +488,10 @@ function startFakeWinsJob() {
           await processNextWin();
         }
       } catch (error) {
-        console.error('[fakeWins] Error in interval job:', error.message);
+        // console.error('[fakeWins] Error in interval job:', error.message);
       }
     }, 5000);
-    console.log('[fakeWins] Using setInterval fallback');
+    // console.log('[fakeWins] Using setInterval fallback');
   }
 }
 
