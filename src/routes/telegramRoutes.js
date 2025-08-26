@@ -10,7 +10,7 @@ const jwt = require('jsonwebtoken');
 // Webhook for Telegram updates
 router.post(`/webhook/${cfg.telegram.webhookSecret}`, async (req, res) => {
   try {
-    console.log('Received update:', req.body);  // Add this line to log the entire update
+    console.log("Raw Telegram update:", JSON.stringify(req.body, null, 2));  // Add this line to log the entire update
 
     const bot = getBot();
     if (!bot) {
@@ -18,13 +18,13 @@ router.post(`/webhook/${cfg.telegram.webhookSecret}`, async (req, res) => {
       return res.status(200).send('ok');
     }
 
-    const { message, callback_query } = req.body;
+    const { message, callback_query, my_chat_member } = req.body;
 
     // console.log("message->\n", message);
     // console.log("callback_query->\n", callback_query);
     
     // Validate webhook payload
-    if (!message && !callback_query) {
+    if (!message && !callback_query && !my_chat_member) {
       console.warn('[tg] Invalid webhook payload received');
       return res.status(400).json({ error: 'Invalid Telegram message' });
     }
@@ -125,7 +125,7 @@ const handleUserInteraction = async (telegramUserId, message) => {
         await User.updateOne({ _id: user._id }, { $set: { telegramJoinedOk: true } });
         return ctx.reply('🎉 Verification successful! You can now open your daily chest.');
       } else {
-        const channelHandle = process.env.TG_CHANNEL_HANDLE || '@zoggycasino';
+        const channelHandle = cfg.telegram.channelId;
         return ctx.reply(
           `📢 Please join our channel first: ${channelHandle}\n\n` +
           'After joining, use the /verify command to complete verification.'
@@ -154,7 +154,7 @@ const handleUserInteraction = async (telegramUserId, message) => {
         console.log(`[tg] Manual verification completed for user ${user._id}`);
         return ctx.reply('🎉 Verification successful! You can now open your daily chest.');
       } else {
-        const channelHandle = process.env.TG_CHANNEL_HANDLE || '@zoggycasino';
+        const channelHandle = cfg.telegram.channelId;
         return ctx.reply(
           `❌ You are not a member of our channel yet.\n\n` +
           `Please join: ${channelHandle}\n\n` +

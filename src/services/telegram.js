@@ -13,6 +13,7 @@ function getBot() {
 async function isMember(telegram, channelId, userId) {
   try {
     const res = await telegram.getChatMember(channelId, userId);
+    console.log("----------------->isMember->\n", res);
     return ['member', 'administrator', 'creator'].includes(res.status);
   } catch {
     return false;

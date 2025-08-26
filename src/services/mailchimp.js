@@ -10,10 +10,19 @@ if (cfg.mailchimp.apiKey) {
 
 async function checkEmailExists(email) {
   if (!cfg.mailchimp.apiKey) return false;
+
+  // Mailchimp requires MD5 of lowercase email for list member lookup
+  const crypto = require('crypto');
+  const subscriberHash = crypto.createHash('md5').update(email.toLowerCase()).digest('hex');
+
   try {
-    const result = await mailchimp.lists.searchMembers(cfg.mailchimp.listId, email);
-    return result.exact_matches.total_items > 0;
+    const result = await mailchimp.lists.getListMember(cfg.mailchimp.listId, subscriberHash);
+    return result.status === 'subscribed' || result.status === 'pending';
   } catch (e) {
+    if (e?.response?.body?.title === 'Resource Not Found') {
+      // Email not in list
+      return false;
+    }
     console.warn('[mailchimp] search error', e.message);
     return false;
   }
