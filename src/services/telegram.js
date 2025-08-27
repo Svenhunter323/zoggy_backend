@@ -10,14 +10,17 @@ function getBot() {
 }
 
 // helper used in webhook route
-async function isMember(telegram, channelId, userId) {
+async function getMemberInfo (telegram, chatId, userId) {
   try {
-    const res = await telegram.getChatMember(channelId, userId);
-    // console.log("----------------->isMember->\n", res);
-    return ['member', 'administrator', 'creator'].includes(res.status);
-  } catch {
-    return false;
+    const res = await telegram.getChatMember(chatId, userId);
+    const status = res?.status;
+    const joined = ['creator', 'administrator', 'member', 'restricted'].includes(status);
+    return { ok: joined, status, raw: res };
+  } catch (e) {
+    // Surface why it failed (e.g. bot not admin in channel, chat not found, etc.)
+    const description = e?.response?.description || e.message;
+    return { ok: false, error: description };
   }
 }
 
-module.exports = { getBot, isMember };
+module.exports = { getBot, getMemberInfo };

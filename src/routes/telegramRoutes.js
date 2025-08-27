@@ -3,14 +3,23 @@ const router = express.Router();
 const cfg = require('../config');
 const { auth } = require('../middleware/auth');
 const { getDeeplink, getVerifyStatus, markAsVerified } = require('../controllers/telegramController');
-const { getBot, isMember } = require('../services/telegram');
+const { getBot, getMemberInfo } = require('../services/telegram');
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 
 // Webhook for Telegram updates
 router.post(`/webhook/${cfg.telegram.webhookSecret}`, async (req, res) => {
   try {
-    console.log("Raw Telegram update:", JSON.stringify(req.body, null, 2));  // Add this line to log the entire update
+    // console.log("Raw Telegram update:", JSON.stringify(req.body, null, 2));  // Add this line to log the entire update
+
+    // Optional but recommended: verify Telegram secret-token header
+    if (cfg.telegram.webhookSecretToken) {
+      const t = req.get('x-telegram-bot-api-secret-token');
+      if (t !== cfg.telegram.webhookSecretToken) {
+        console.warn('[tg] bad secret token');
+        return res.status(200).send('ok'); // respond ok to avoid retries, but ignore
+      }
+    }
 
     const bot = getBot();
     if (!bot) {
@@ -26,7 +35,7 @@ router.post(`/webhook/${cfg.telegram.webhookSecret}`, async (req, res) => {
     // Validate webhook payload
     if (!message && !callback_query && !my_chat_member) {
       console.warn('[tg] Invalid webhook payload received');
-      return res.status(400).json({ error: 'Invalid Telegram message' });
+      return res.status(200).json({ error: 'Invalid Telegram message' });
     }
 
     // Handle the update
@@ -41,7 +50,7 @@ router.post(`/webhook/${cfg.telegram.webhookSecret}`, async (req, res) => {
     res.status(200).send('ok');
   } catch (error) {
     console.error('[tg] Webhook error:', error.message);
-    res.status(500).send('Error processing webhook');
+    res.status(200).send('Error processing webhook');
   }
 });
 
@@ -55,7 +64,7 @@ const handleUserInteraction = async (telegramUserId, message) => {
     // Check if user is now a member and update status
     if (cfg.telegram.channelId) {
       const bot = getBot();
-      const isMemberNow = await isMember(bot.telegram, cfg.telegram.channelId, telegramUserId);
+      const { ok: isMemberNow, status, error } = await getMemberInfo(bot.telegram, cfg.telegram.channelId, telegramUserId);
       
       if (isMemberNow && !user.telegramJoinedOk) {
         await User.updateOne(
@@ -79,20 +88,22 @@ const handleUserInteraction = async (telegramUserId, message) => {
   bot.start(async (ctx) => {
     try {
       const payload = ctx.startPayload; // JWT with userId
-      console.log("------------------------>/start: payload:\n", payload);
+      // console.log("------------------------>/start: payload:\n", payload);
       if (!payload) {
         return ctx.reply('❌ Invalid start link. Please get a new link from the website.');
       }
       
       let userId;
+      let v;
       try {
-        const data = jwt.verify(payload, cfg.jwtSecret);
-        userId = data.sub;
-        
+        // const data = jwt.verify(payload, cfg.jwtSecret);
+        // userId = data.sub;
+        [ userId, v ] = payload.split('_');
+
         // Validate auth version if present
-        if (data.v !== undefined) {
+        if (v !== undefined) {
           const user = await User.findById(userId);
-          if (!user || user.authVersion !== data.v) {
+          if (!user || user.authVersion - v !== 0) {
             return ctx.reply('🔒 Session expired. Please get a new link from the website.');
           }
         }
@@ -119,7 +130,7 @@ const handleUserInteraction = async (telegramUserId, message) => {
         return ctx.reply('⚠️ Channel not configured. Please contact support.');
       }
       
-      const isChannelMember = await isMember(ctx.telegram, cfg.telegram.channelId, ctx.from.id);
+      const { ok: isChannelMember, status, error } = await getMemberInfo(ctx.telegram, cfg.telegram.channelId, ctx.from.id);
       
       if (isChannelMember) {
         await User.updateOne({ _id: user._id }, { $set: { telegramJoinedOk: true } });

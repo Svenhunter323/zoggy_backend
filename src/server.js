@@ -63,10 +63,13 @@ const { startFakeWinsJob } = require('./jobs/fakeWins');
   const bot = getBot();
   if (bot && cfg.publicBaseUrl && cfg.telegram.webhookSecret) {
     const url = `${cfg.publicBaseUrl}/api/telegram/webhook/${cfg.telegram.webhookSecret}`;
-    bot.telegram.setWebhook(url).then(() => {
+    bot.telegram.setWebhook(url, {
+      // extra protection so only Telegram can hit the route:
+      secret_token: cfg.telegram.webhookSecretToken || undefined
+    }).then(() => {
       console.log('[tg] webhook set', url);
     }).catch(e => console.warn('[tg] webhook error', e.message));
-  }
+   }
 
   // Start fake wins generator
   // startFakeWinsJob();
