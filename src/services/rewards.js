@@ -12,14 +12,17 @@ function weightedPick(weights) {
   }
   
   const FIRST_CHEST = [
-    { cents: 10, p: 0.70 },   // $0.10
-    { cents: 20, p: 0.30 }    // $0.20
+    { cents: 100, p: 0.20 },   // $0.10
+    { cents: 200, p: 0.20 },   // $0.10
+    { cents: 300, p: 0.20 },   // $0.10
+    { cents: 400, p: 0.20 },   // $0.10
+    { cents: 500, p: 0.20 }    // $0.20
   ];
   
   const STANDARD_CHEST = [
-    { cents: 0,  p: 0.20 },   // $0
-    { cents: 10, p: 0.60 },   // $0.10
-    { cents: 20, p: 0.05 },   // $0.20
+    { cents: 10,  p: 0.20 },  // $0.10
+    { cents: 20, p: 0.60 },   // $0.20
+    { cents: 30, p: 0.10 },   // $0.30
     { cents: 50, p: 0.05 },   // $0.50
     { cents: 100, p: 0.05 }   // $1.00
     // big wins (10–10,000) NEVER given to real users

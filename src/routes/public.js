@@ -140,13 +140,16 @@ router.get('/dashboard', auth, async (req, res) => {
 
   const total = await User.countDocuments();
 
+  let fakepos = ahead + 1 + 1510;
+  let faketotal = total + 1510;
+
   res.json({
     email: u.email,
     referralCode: u.referralCode,
     claimCode: u.claimCode,
     referrals: u.referralCount,
-    position: ahead + 1,
-    total,
+    position: fakepos,
+    total: faketotal,
     cents: u.cents,
     balance: (u.cents / 100).toFixed(2),
     telegram: { linked: !!u.telegramUserId, verified: !!u.telegramJoinedOk },
