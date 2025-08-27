@@ -19,32 +19,42 @@ router.get('/users', adminAuth, async (req, res) => {
 router.get('/referrals', adminAuth, async (req, res) => {
   try {
     const referralStats = await User.aggregate([
-      {
-        $group: {
+      // keep only docs that were actually referred
+      { $match: { referredBy: { $nin: [null, ''] } } },
+    
+      { $group: {
           _id: '$referredBy',
-          totalReferrals: { $sum: 1 },
-          referrerEmail: { $first: '$referredBy' }
+          totalReferrals: { $sum: 1 }
         }
       },
-      {
-        $match: { _id: { $ne: null, $ne: '' } }
-      },
-      {
-        $lookup: {
+    
+      // join referrer user by referralCode
+      { $lookup: {
           from: 'users',
           localField: '_id',
           foreignField: 'referralCode',
           as: 'referrer'
         }
       },
-      {
-        $project: {
-          referralCode: '$_id',
-          totalReferrals: 1,
+    
+      // extract fields from the joined user
+      { $addFields: {
           referrerEmail: { $arrayElemAt: ['$referrer.email', 0] },
           referrerCredits: { $arrayElemAt: ['$referrer.cents', 0] }
         }
       },
+    
+      // <<< filter here: only entries with non-null/non-empty email
+      { $match: { referrerEmail: { $nin: [null, ''] } } },
+    
+      { $project: {
+          referralCode: '$_id',
+          totalReferrals: 1,
+          referrerEmail: 1,
+          referrerCredits: 1
+        }
+      },
+    
       { $sort: { totalReferrals: -1 } },
       { $limit: 100 }
     ]);
