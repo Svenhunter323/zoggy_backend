@@ -1,0 +1,1 @@
+curl -X GET "https://api.telegram.org/bot7597527705:AAETbjZXbs9Y7WVHgREADmrau7mIcCthvpk/getUpdates"

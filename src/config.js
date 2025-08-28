@@ -25,6 +25,7 @@ const cfg = {
   telegram: {
     token: process.env.TELEGRAM_BOT_TOKEN,
     channelId: process.env.TELEGRAM_CHANNEL_ID,
+    groupInviteCode: process.env.TELEGRAM_GROUP_INVITE_CODE,
     webhookSecret: process.env.TELEGRAM_WEBHOOK_SECRET,
     webhookSecretToken: process.env.TELEGRAM_WEBHOOK_SECRET_TOKEN,
   },

@@ -15,6 +15,7 @@ const chestRoutes = require('./routes/chestRoutes');
 const referralRoutes = require('./routes/referralRoutes');
 const { getBot } = require('./services/telegram');
 const { startFakeWinsJob } = require('./jobs/fakeWins');
+const { cspMiddleware } = require('./middleware/csp');
 
 (async () => {
   await connectDb();
@@ -27,12 +28,25 @@ const { startFakeWinsJob } = require('./jobs/fakeWins');
   app.use(cookieParser());
   app.use(captureContext);
 
-  // Set CSP header to allow images from external sources
+  // Apply CSP to everything, or wrap only HTML routes if you prefer
+  app.use(cspMiddleware());
+
+  // CORS configuration for frontend (optional but recommended)
   app.use((req, res, next) => {
-    const csp = "default-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https://api.dicebear.com https://flagcdn.com;";
-    // console.log(csp);  // Debug log to verify the CSP header
-    res.setHeader('Content-Security-Policy', csp);
+    res.setHeader('Access-Control-Allow-Origin', '*');  // Allow all domains (or specify your frontend URL)
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     next();
+  });
+  app.get('/api/ip', (req, res) => {
+    res.json({ ip: req.ip });
+  });
+  app.get('/proxy/ipapi', async (req, res) => {
+    try {
+      const response = await axios.get('https://ipapi.co/json/');
+      res.json(response.data);  // Send the API response back to the frontend
+    } catch (error) {
+      res.status(500).send({ error: 'Error fetching data from ipapi.co' });
+    }
   });
 
   // Basic rate limit (esp. signup)
@@ -65,7 +79,9 @@ const { startFakeWinsJob } = require('./jobs/fakeWins');
     const url = `${cfg.publicBaseUrl}/api/telegram/webhook/${cfg.telegram.webhookSecret}`;
     bot.telegram.setWebhook(url, {
       // extra protection so only Telegram can hit the route:
-      secret_token: cfg.telegram.webhookSecretToken || undefined
+      secret_token: cfg.telegram.webhookSecretToken || undefined,
+      drop_pending_updates: true,
+      allowed_updates: ['message', 'chat_join_request', 'chat_member'], // <<<
     }).then(() => {
       console.log('[tg] webhook set', url);
     }).catch(e => console.warn('[tg] webhook error', e.message));

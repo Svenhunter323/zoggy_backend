@@ -23,4 +23,20 @@ async function getMemberInfo (telegram, chatId, userId) {
   }
 }
 
-module.exports = { getBot, getMemberInfo };
+async function approveChatJoinRequest(chatId, userId) {
+  try {
+    const telegram = getBot().telegram;
+    if (!telegram) throw new Error('Telegram bot not configured');
+    await telegram.approveChatJoinRequest(chatId, userId);
+    return { ok: true };
+  } catch (e) {
+    const description = e?.response?.description || e.message;
+    return { ok: false, error: description };
+  }
+}
+
+module.exports = { 
+  getBot, 
+  getMemberInfo,
+  approveChatJoinRequest
+};
