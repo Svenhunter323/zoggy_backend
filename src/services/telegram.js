@@ -95,11 +95,13 @@ async function initBotPolling() {
         const inGroup = ['member', 'creator', 'administrator', 'restricted'].includes(m.status);
         if (inGroup) {
           row.status = 'verified'; row.verifiedAt = new Date(); await row.save();
-          const url = `${RETURN_URL}?nonce=${encodeURIComponent(nonce)}`;
-          return ctx.reply(
-            '🎉 You are already in the group. Return to the site:',
-            Markup.inlineKeyboard([[ Markup.button.url('Return to site', url) ]])
-          );
+
+          verifyUserInGroup(ctx, row);
+          // const url = `${RETURN_URL}?nonce=${encodeURIComponent(nonce)}`;
+          // return ctx.reply(
+          //   '🎉 You are already in the group. Return to the site:',
+          //   Markup.inlineKeyboard([[ Markup.button.url('Return to site', url) ]])
+          // );
         }
       } catch (e) {
         console.warn('[tg] getChatMember failed (bot admin? correct GROUP_ID?):', e?.response?.description || e.message);
@@ -144,26 +146,7 @@ async function initBotPolling() {
         return;
       }
     
-      // Attach Telegram to a user/session
-      let user = await User.findById(row.userId);
-      if (!user) {
-        try { await ctx.telegram.sendMessage(from.id, 'Link expired or session error. Please tap Connect Telegram again on the website.'); } catch {}
-        return;
-      }
-    
-      try {
-        user.telegramUserId = row.tgUserId;
-        user.telegramJoinedOk = true;
-        await user.save();
-        
-        await ctx.telegram.sendMessage(
-          from.id,
-          '🎉 Approved! Return to the site to open your chest!',
-        );
-      } catch (e) {
-        console.error('[tg] saving user telegram info failed:', e);
-        try { await ctx.telegram.sendMessage(from.id, 'Link expired or session error. Please tap Connect Telegram again on the website.'); } catch {}
-      }
+      verifyUserInGroup(ctx, row);
 
       // // Mark verified & DM back link
       // row.status = 'verified';
@@ -186,6 +169,31 @@ async function initBotPolling() {
       // console.log('[chat id]', ctx.chat.id, ctx.chat.title, ctx.chat.type);
       // For supergroups/channels this will look like -100xxxxxxxxxx
     });
+
+    const verifyUserInGroup = async (ctx, row) => {
+      try {
+        // Attach Telegram to a user/session
+        let user = await User.findById(row.userId);
+        if (!user) {
+          try { await ctx.telegram.sendMessage(row.tgUserId, 'Link expired or session error. Please tap Connect Telegram again on the website.'); } catch {}
+          return;
+        }
+        
+        user.telegramUserId = row.tgUserId;
+        user.telegramJoinedOk = true;
+        await user.save();
+        
+        await ctx.telegram.sendMessage(
+          row.tgUserId,
+          '🎉 Approved! Return to the site to open your chest!',
+        );
+      } catch (e) {
+        console.error('[tg] saving user telegram info failed:', e);
+        try { await ctx.telegram.sendMessage(row.tgUserId, 'Link expired or session error. Please tap Connect Telegram again on the website.'); } catch {}
+      }
+    };
+
+
     wired = true;
   }
 
