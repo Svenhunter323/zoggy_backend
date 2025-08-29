@@ -1,6 +1,7 @@
 // controllers/telegramBot.js
 const { Telegraf, Markup } = require('telegraf');
 const TelegramNonce = require('../models/TelegramNonce');
+const User = require('../models/User');
 
 // --- Config from env (NO inline comments in .env lines!) ---
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
