@@ -197,7 +197,7 @@ const createNonce = async (req, res) => {
     // Create a nonce for this user
     const nonce = await TelegramNonce.createForUser(user._id);
 
-    res.json({ ok: true, nonce, botUsername: BOT_USERNAME });
+    res.json({ ok: true, nonce, botUsername: cfg.telegram.botUserName });
   } catch (e) {
     console.error('[tg] create nonce error', e);
     return res.status(500).json({ ok: false, error: e.message });

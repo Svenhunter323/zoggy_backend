@@ -28,6 +28,7 @@ const cfg = {
     groupInviteCode: process.env.TELEGRAM_GROUP_INVITE_CODE,
     webhookSecret: process.env.TELEGRAM_WEBHOOK_SECRET,
     webhookSecretToken: process.env.TELEGRAM_WEBHOOK_SECRET_TOKEN,
+    botUserName: process.env.TELEGRAM_BOT_USERNAME
   },
 
   antifraud: {
