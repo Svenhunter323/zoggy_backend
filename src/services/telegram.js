@@ -97,6 +97,7 @@ async function initBotPolling() {
           row.status = 'verified'; row.verifiedAt = new Date(); await row.save();
 
           verifyUserInGroup(ctx, row);
+          return;
           // const url = `${RETURN_URL}?nonce=${encodeURIComponent(nonce)}`;
           // return ctx.reply(
           //   '🎉 You are already in the group. Return to the site:',
