@@ -1,0 +1,62 @@
+
+proj_1_zoggy_chest_PS_V2.png
+size: 2048,2048
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+Circle_rays_16
+  rotate: true
+  xy: 2, 2
+  size: 177, 166
+  orig: 177, 166
+  offset: 0, 0
+  index: -1
+Layer 1
+  rotate: true
+  xy: 2, 181
+  size: 600, 235
+  orig: 600, 235
+  offset: 0, 0
+  index: -1
+Layer 2
+  rotate: true
+  xy: 239, 210
+  size: 571, 233
+  orig: 571, 233
+  offset: 0, 0
+  index: -1
+Layer 3
+  rotate: true
+  xy: 2, 783
+  size: 571, 337
+  orig: 571, 337
+  offset: 0, 0
+  index: -1
+Layer 4
+  rotate: false
+  xy: 341, 1073
+  size: 254, 281
+  orig: 254, 281
+  offset: 0, 0
+  index: -1
+Layer 5
+  rotate: false
+  xy: 303, 72
+  size: 74, 136
+  orig: 74, 136
+  offset: 0, 0
+  index: -1
+glow2
+  rotate: false
+  xy: 2, 1356
+  size: 617, 666
+  orig: 617, 666
+  offset: 0, 0
+  index: -1
+triangle
+  rotate: true
+  xy: 170, 45
+  size: 134, 131
+  orig: 134, 131
+  offset: 0, 0
+  index: -1
