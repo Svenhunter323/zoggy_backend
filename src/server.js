@@ -13,7 +13,7 @@ const telegramRoutes = require('./routes/telegramRoutes');
 const authRoutes = require('./routes/authRoutes');
 const chestRoutes = require('./routes/chestRoutes');
 const referralRoutes = require('./routes/referralRoutes');
-const { getBot } = require('./services/telegram');
+const { getBot, initBotPolling } = require('./services/telegram');
 const { startFakeWinsJob } = require('./jobs/fakeWins');
 const { cspMiddleware } = require('./middleware/csp');
 
@@ -69,24 +69,10 @@ const { cspMiddleware } = require('./middleware/csp');
 
   app.get('/health', (_, res) => res.json({ ok: true }));
 
-  const server = app.listen(cfg.port, () => {
+  const server = app.listen(cfg.port, async () => {
     console.log(`[api] listening on :${cfg.port}`);
+    
+    await initBotPolling();
   });
 
-  // Telegram webhook init (if token set)
-  const bot = getBot();
-  if (bot && cfg.publicBaseUrl && cfg.telegram.webhookSecret) {
-    const url = `${cfg.publicBaseUrl}/api/telegram/webhook/${cfg.telegram.webhookSecret}`;
-    bot.telegram.setWebhook(url, {
-      // extra protection so only Telegram can hit the route:
-      secret_token: cfg.telegram.webhookSecretToken || undefined,
-      drop_pending_updates: true,
-      allowed_updates: ['message', 'chat_join_request', 'chat_member'], // <<<
-    }).then(() => {
-      console.log('[tg] webhook set', url);
-    }).catch(e => console.warn('[tg] webhook error', e.message));
-   }
-
-  // Start fake wins generator
-  // startFakeWinsJob();
 })();

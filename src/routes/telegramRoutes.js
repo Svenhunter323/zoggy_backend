@@ -2,7 +2,16 @@ const express = require('express');
 const router = express.Router();
 const cfg = require('../config');
 const { auth } = require('../middleware/auth');
-const { login, getDeeplink, getVerifyStatus, reCheck, webHook, markAsVerified } = require('../controllers/telegramController');
+const { 
+  login, 
+  getDeeplink, 
+  getVerifyStatus, 
+  reCheck, 
+  webHook, 
+  markAsVerified,
+  createNonce,
+  callback
+} = require('../controllers/telegramController');
 // const { getBot, getMemberInfo } = require('../services/telegram');
 const User = require('../models/User');
 
@@ -23,5 +32,11 @@ router.post('/verify', auth, markAsVerified);
 
 // Webhook for Telegram updates
 router.post(`/webhook/${cfg.telegram.webhookSecret}`, webHook);
+
+// Create nonce for this user
+router.post('/nonce', auth, createNonce);
+
+// Callback endpoint for Telegram login widget
+router.get('/callback', callback);
 
 module.exports = router;
