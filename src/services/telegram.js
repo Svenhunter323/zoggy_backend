@@ -142,23 +142,45 @@ async function initBotPolling() {
         try { await ctx.telegram.sendMessage(from.id, 'Link expired. Please tap Connect Telegram again on the website.'); } catch {}
         return;
       }
-
-      // Mark verified & DM back link
-      row.status = 'verified';
-      row.verifiedAt = new Date();
-      await row.save();
-
-      const url = `${RETURN_URL}?nonce=${encodeURIComponent(row.nonce)}`;
+    
+      // Attach Telegram to a user/session
+      let user = await User.findById(row.userId);
+      if (!user) {
+        try { await ctx.telegram.sendMessage(from.id, 'Link expired or session error. Please tap Connect Telegram again on the website.'); } catch {}
+        return;
+      }
+    
       try {
+        user.telegramUserId = row.tgUserId;
+        user.telegramJoinedOk = true;
+        await user.save();
+        
         await ctx.telegram.sendMessage(
           from.id,
-          '🎉 Approved! Return to the site to open your chest:',
-          { reply_markup: { inline_keyboard: [[{ text: 'Return to site', url }]] } }
+          '🎉 Approved! Return to the site to open your chest!',
         );
       } catch (e) {
-        console.error('[tg] DM failed:', e?.response?.description || e.message);
+        console.error('[tg] saving user telegram info failed:', e);
+        try { await ctx.telegram.sendMessage(from.id, 'Link expired or session error. Please tap Connect Telegram again on the website.'); } catch {}
       }
+
+      // // Mark verified & DM back link
+      // row.status = 'verified';
+      // row.verifiedAt = new Date();
+      // await row.save();
+
+      // // const url = `${RETURN_URL}?nonce=${encodeURIComponent(row.nonce)}`;
+      // // try {
+      // //   await ctx.telegram.sendMessage(
+      // //     from.id,
+      // //     '🎉 Approved! Return to the site to open your chest:',
+      // //     { reply_markup: { inline_keyboard: [[{ text: 'Return to site', url }]] } }
+      // //   );
+      // // } catch (e) {
+      // //   console.error('[tg] DM failed:', e?.response?.description || e.message);
+      // // }
     });
+
     bot.on('message', (ctx) => {
       // console.log('[chat id]', ctx.chat.id, ctx.chat.title, ctx.chat.type);
       // For supergroups/channels this will look like -100xxxxxxxxxx
