@@ -1,37 +1,33 @@
 // return amount in cents
 function weightedPick(weights) {
-    // weights: [{cents: 10, p: 0.7}, ...]
-    const r = Math.random();
-    let acc = 0;
-    for (const w of weights) {
-      acc += w.p;
-      if (r <= acc) return w.cents;
-    }
-    // fallback
-    return 0;
+  // weights: [{cents: fn, p: 0.7}, ...]
+  const r = Math.random();
+  let acc = 0;
+  for (const w of weights) {
+    acc += w.p;
+    if (r <= acc) return w.cents();
   }
-  
-  const FIRST_CHEST = [
-    { cents: 100, p: 0.20 },   // $0.10
-    { cents: 200, p: 0.20 },   // $0.10
-    { cents: 300, p: 0.20 },   // $0.10
-    { cents: 400, p: 0.20 },   // $0.10
-    { cents: 500, p: 0.20 }    // $0.20
-  ];
-  
-  const STANDARD_CHEST = [
-    { cents: 10,  p: 0.20 },  // $0.10
-    { cents: 20, p: 0.60 },   // $0.20
-    { cents: 30, p: 0.10 },   // $0.30
-    { cents: 50, p: 0.05 },   // $0.50
-    { cents: 100, p: 0.05 }   // $1.00
-    // big wins (10–10,000) NEVER given to real users
-  ];
-  
-  function drawReward(isFirst) {
-    const cents = weightedPick(isFirst ? FIRST_CHEST : STANDARD_CHEST);
-    return cents;
-  }
-  
-  module.exports = { drawReward };
-  
+  // fallback (numeric drift)
+  return weights[weights.length - 1].cents();
+}
+
+// helper: random integer between min and max (inclusive)
+function randRange(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+const FIRST_CHEST = [
+  { p: 0.60, cents: () => randRange(400, 1500) },   // $4 – $15
+  { p: 0.40, cents: () => randRange(1501, 5000) }   // $15.01 – $50
+];
+
+const STANDARD_CHEST = [
+  { p: 0.70, cents: () => randRange(50, 300) },     // $0.50 – $3.00
+  { p: 0.30, cents: () => randRange(310, 1000) }    // $3.10 – $10.00
+];
+
+function drawReward(isFirst) {
+  return weightedPick(isFirst ? FIRST_CHEST : STANDARD_CHEST);
+}
+
+module.exports = { drawReward };

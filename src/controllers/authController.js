@@ -74,8 +74,9 @@ const sendVerificationEmail = async (email, verificationLink) => {
 
 // Anti-fraud helpers
 async function ipSignupCount(ip) {
-  const since = new Date(Date.now() - 3600 * 1000); // 1 hour instead of 24 hours
-  return User.countDocuments({ signupIp: ip, createdAt: { $gte: since } });
+  // const since = new Date(Date.now() - 3600 * 1000 * 24 * 365); // 1 year instead of 24 hours
+  // return User.countDocuments({ signupIp: ip, createdAt: { $gte: since } });
+  return User.countDocuments({ signupIp: ip }); // permenently count all signups from this IP
 }
 
 async function deviceSignupCount(deviceId) {
@@ -106,7 +107,7 @@ const signup = async (req, res) => {
     }
 
     // 3. Check if email exists in Mailchimp
-    const emailExistsInMailchimp = await checkEmailExists(email);
+    // const emailExistsInMailchimp = await checkEmailExists(email);
     // if (emailExistsInMailchimp) {
     //   return res.status(400).json({ error: 'email_already_registered_in_mailchimp' });
     // }
